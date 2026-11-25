@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0d1320">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Les mesures de l'informatique en 3D</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#0a0e16;color:#e8edf5;font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif}
+  #app{display:flex;height:100vh;height:100dvh}
+  #stage{position:relative;flex:1;min-width:0;min-height:0;overflow:hidden;background:radial-gradient(ellipse at 50% 35%,#1b2840 0%,#0d1320 60%,#080b12 100%);touch-action:none}
+  #c{display:block;width:100%;height:100%;cursor:grab}
+  #c:active{cursor:grabbing}
+  #badges{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+  .badge{position:absolute;left:0;top:0;width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;background:#ff7a1a;color:#10131a;border:2px solid #fff;font:700 11px/16px Arial,sans-serif;text-align:center;pointer-events:auto;cursor:pointer;will-change:transform;box-shadow:0 1px 6px rgba(0,0,0,.6)}
+  .badge.sel{background:#22d3ee;box-shadow:0 0 0 4px rgba(34,211,238,.35)}
+  #top{position:absolute;left:12px;top:8px;right:12px;pointer-events:none}
+  #top h1{margin:0;font-size:17px}
+  @media (max-width:800px){#top h1 .opt{display:none}}
+  #top h1 span{color:#ff7a1a}
+  #top p{margin:2px 0 0;font-size:12px;color:#9fb0c9}
+  #tabs{position:absolute;left:8px;right:8px;top:54px;display:flex;gap:6px;flex-wrap:wrap}
+  #tabs button{background:#1a2438;color:#c9d6ec;border:1px solid #33425f;border-radius:20px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer}
+  #tabs button.on{background:#ff7a1a;border-color:#ff7a1a;color:#10131a}
+  #bar{position:absolute;left:8px;right:8px;bottom:8px;display:flex;justify-content:center;pointer-events:none}
+  #ctl{pointer-events:auto;width:100%;max-width:560px;background:rgba(16,23,38,.9);border:1px solid #2b3a58;border-radius:12px;padding:9px 12px;font-size:13px}
+  #ctl:empty{display:none}
+  #ctl .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+  #ctl .row:last-child{margin-bottom:0}
+  #ctl label{color:#9fb0c9;min-width:64px}
+  #ctl input[type=range]{flex:1;min-width:120px;accent-color:#ff7a1a}
+  #ctl select{background:#1a2438;color:#e8edf5;border:1px solid #33425f;border-radius:8px;padding:5px 8px;font-size:13px}
+  #ctl .seg button{background:#1a2438;color:#dbe4f3;border:1px solid #33425f;padding:6px 10px;font-size:13px;cursor:pointer;font-weight:600}
+  #ctl .seg button:first-child{border-radius:8px 0 0 8px}
+  #ctl .seg button:last-child{border-radius:0 8px 8px 0}
+  #ctl .seg button.on{background:#ff7a1a;border-color:#ff7a1a;color:#10131a}
+  #ctl .res{color:#e8edf5;line-height:1.45}
+  #ctl .res b{color:#ffb070}
+  #panel{width:360px;flex:none;overflow:auto;background:#101726;border-left:1px solid #22304a;padding:14px}
+  #list{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:4px}
+  #list button{width:100%;display:flex;align-items:center;gap:10px;text-align:left;background:#172036;color:#dbe4f3;border:1px solid transparent;border-radius:8px;padding:7px 9px;font-size:14px;cursor:pointer}
+  #list button:hover{background:#1e2a45}
+  #list button.sel{border-color:#22d3ee;background:#16314a}
+  #list .n{flex:none;width:22px;height:22px;border-radius:50%;background:#ff7a1a;color:#10131a;font-weight:700;font-size:12px;display:grid;place-items:center}
+  #list button.sel .n{background:#22d3ee}
+  #detail h2{margin:0 0 8px;font-size:18px}
+  #detail h3{margin:12px 0 3px;font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:#ff9a4d}
+  #detail p{margin:0;line-height:1.5;font-size:14.5px;color:#d3dcec}
+  #detail .legend{margin-top:12px;font-size:12.5px;color:#8fa1bd}
+  @media (max-width:800px){
+    #app{flex-direction:column}
+    #panel{width:100%;max-height:44%;border-left:0;border-top:1px solid #22304a;padding:10px 12px}
+    #list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+    #list li{flex:none}
+    #list button{width:auto;padding:4px}
+    #list .name{display:none}
+    #list .n{width:28px;height:28px;font-size:13px}
+    #detail h2{font-size:16px}
+    #detail p{font-size:14px}
+    #top h1{font-size:15px}
+    #top p{display:none}
+    #tabs{top:34px}
+    #tabs button{padding:5px 10px;font-size:12px}
+    #ctl{font-size:12px;padding:7px 9px}
+  }
+
+  #net{position:absolute;right:10px;top:8px;display:flex;gap:6px;align-items:center;z-index:5;font-size:11px}
+  #netTxt{padding:4px 9px;border-radius:20px;background:#1a2438;border:1px solid #33425f;color:#9fb0c9;white-space:nowrap}
+  #net.ok #netTxt{color:#4ade80;border-color:#1f6b3f}
+  #inst{background:#ff7a1a;color:#10131a;border:0;border-radius:20px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer}
+  #inst[hidden]{display:none}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+    <canvas id="c"></canvas>
+    <div id="badges"></div>
+    <div id="net"><span id="netTxt">Préparation hors ligne…</span><button id="inst" hidden>Installer</button></div>
+    <div id="top"><h1>Les mesures de l'informatique <span class="opt"> en 3D</span></h1><p>Glisse pour tourner · molette ou pincer pour zoomer · touche un numéro</p></div>
+    <div id="tabs"></div>
+    <div id="bar"><div id="ctl"></div></div>
+  </div>
+  <aside id="panel">
+    <ul id="list"></ul>
+    <div id="detail"></div>
+  </aside>
+</div>
+
+<script src="three.min.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- Outils ---------- */
+  function M(color, o) { return new THREE.MeshStandardMaterial(Object.assign({ color: color, roughness: 0.5, metalness: 0.2 }, o || {})); }
+  function box(w, h, d, mat, x, y, z) { var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x || 0, y || 0, z || 0); return m; }
+  function at(o, x, y, z) { o.position.set(x, y, z); return o; }
+  function fr(n, d) { return n.toLocaleString("fr-FR", { maximumFractionDigits: d == null ? 1 : d }); }
+  function label(l1, l2, scale) {
+    var c = document.createElement("canvas"); c.width = 512; c.height = 180;
+    var x = c.getContext("2d"); x.textAlign = "center";
+    x.shadowColor = "rgba(0,0,0,.9)"; x.shadowBlur = 8;
+    var f1 = 78; x.font = "bold " + f1 + "px Arial"; while (x.measureText(l1).width > 470 && f1 > 30) { f1 -= 4; x.font = "bold " + f1 + "px Arial"; }
+    x.fillStyle = "#ffffff"; x.fillText(l1, 256, l2 ? 85 : 115);
+    if (l2) { var f2 = 40; x.font = f2 + "px Arial"; while (x.measureText(l2).width > 480 && f2 > 20) { f2 -= 2; x.font = f2 + "px Arial"; } x.fillStyle = "#a9bbd8"; x.fillText(l2, 256, 145); }
+    var t = new THREE.CanvasTexture(c);
+    var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true, depthTest: false }));
+    s.renderOrder = 10; s.scale.set(3.4 * (scale || 1), 1.2 * (scale || 1), 1); return s;
+  }
+  function grid(size) { var g = new THREE.GridHelper(size, size, 0x2a3a5a, 0x16213a); return g; }
+
+  /* ---------- Moteur commun ---------- */
+  var canvas = document.getElementById("c"), stage = document.getElementById("stage");
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  var scene = new THREE.Scene(), FOV = 40;
+  var camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 300);
+  scene.add(new THREE.HemisphereLight(0xdfe9ff, 0x223044, 0.85));
+  var d1 = new THREE.DirectionalLight(0xffffff, 0.95); d1.position.set(6, 14, 9); scene.add(d1);
+  var d2 = new THREE.DirectionalLight(0x88aaff, 0.5); d2.position.set(-9, 4, -6); scene.add(d2);
+  var world = new THREE.Group(); scene.add(world);
+
+  var target = new THREE.Vector3(0, 1.5, 0), theta = 0.5, phi = 1.1, radius = 18, radiusTarget = 18, autoFit = true, fitW = 16, dragging = false;
+  function applyCamera() {
+    camera.position.set(target.x + radius * Math.sin(phi) * Math.sin(theta), target.y + radius * Math.cos(phi), target.z + radius * Math.sin(phi) * Math.cos(theta));
+    camera.lookAt(target);
+  }
+  function fitRadius() { radiusTarget = Math.max(10, fitW / (2 * Math.tan(FOV * Math.PI / 360) * camera.aspect), fitW * 0.55); }
+  function resize() {
+    var w = stage.clientWidth, h = stage.clientHeight; if (!w || !h) return;
+    renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); if (autoFit) fitRadius();
+  }
+  if (window.ResizeObserver) new ResizeObserver(resize).observe(stage); else window.addEventListener("resize", resize);
+
+  var pointers = new Map(), down = null, pinch0 = 0;
+  function pdist() { var a = Array.from(pointers.values()); return Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y); }
+  function clampR(r) { return Math.min(70, Math.max(5, r)); }
+  canvas.addEventListener("pointerdown", function (ev) {
+    canvas.setPointerCapture(ev.pointerId); pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+    if (pointers.size === 1) { down = { moved: 0 }; dragging = true; } else if (pointers.size === 2) { pinch0 = pdist(); down = null; }
+  });
+  canvas.addEventListener("pointermove", function (ev) {
+    var pr = pointers.get(ev.pointerId); if (!pr) return;
+    var dx = ev.clientX - pr.x, dy = ev.clientY - pr.y; pr.x = ev.clientX; pr.y = ev.clientY;
+    if (pointers.size === 1) { theta -= dx * 0.008; phi = Math.min(Math.PI - 0.05, Math.max(0.05, phi - dy * 0.008)); if (down) down.moved += Math.abs(dx) + Math.abs(dy); }
+    else if (pointers.size === 2) { var d = pdist(); if (pinch0 > 0) { radius = clampR(radius * pinch0 / d); radiusTarget = radius; autoFit = false; } pinch0 = d; }
+  });
+  function endPointer(ev) {
+    var had = pointers.delete(ev.pointerId);
+    if (had && ev.type === "pointerup" && down && pointers.size === 0 && down.moved < 6) pick(ev.clientX, ev.clientY);
+    if (pointers.size === 0) { dragging = false; down = null; }
+  }
+  canvas.addEventListener("pointerup", endPointer); canvas.addEventListener("pointercancel", endPointer);
+  canvas.addEventListener("wheel", function (ev) { ev.preventDefault(); radius = clampR(radius * Math.exp(ev.deltaY * 0.001)); radiusTarget = radius; autoFit = false; }, { passive: false });
+
+  /* ---------- Scène courante, éléments numérotés ---------- */
+  var items = [], updaters = [], selected = 0, current = null;
+  var badgesEl = document.getElementById("badges"), listEl = document.getElementById("list"), detailEl = document.getElementById("detail"), ctlEl = document.getElementById("ctl"), tabsEl = document.getElementById("tabs");
+  var ray = new THREE.Raycaster();
+
+  function pick(cx, cy) {
+    var r = canvas.getBoundingClientRect();
+    ray.setFromCamera(new THREE.Vector2(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1), camera);
+    var hits = ray.intersectObjects(world.children, true);
+    for (var i = 0; i < hits.length; i++) {
+      var o = hits[i].object;
+      while (o && !o.userData.itemId) o = o.parent;
+      if (o) { select(o.userData.itemId); return; }
+    }
+  }
+  function mats(o) { var a = []; o.traverse(function (n) { if (n.material) (Array.isArray(n.material) ? n.material : [n.material]).forEach(function (m) { a.push(m); }); }); return a; }
+  function setGlow(obj, on) {
+    mats(obj).forEach(function (m) {
+      if (m.emissive) {
+        if (!m.userData.e0) { m.userData.e0 = m.emissive.clone(); m.userData.ei0 = m.emissiveIntensity; }
+        if (on) { m.emissive.set(0xff7a00); m.emissiveIntensity = 0.55; } else { m.emissive.copy(m.userData.e0); m.emissiveIntensity = m.userData.ei0; }
+      } else if (m.color && !m.isMeshBasicMaterial) {
+        if (!m.userData.c0) m.userData.c0 = m.color.clone();
+        if (on) m.color.set(0x22d3ee); else m.color.copy(m.userData.c0);
+      }
+    });
+  }
+  function select(id) {
+    selected = id;
+    items.forEach(function (it) { var on = it.id === id; setGlow(it.obj, on); it.badge.classList.toggle("sel", on); it.btn.classList.toggle("sel", on); });
+    var it = items.filter(function (i) { return i.id === id; })[0]; if (!it) return;
+    detailEl.innerHTML = "<h2>" + id + ". " + it.name + "</h2><h3>Définition</h3><p>" + it.def + "</p><h3>Rôle</h3><p>" + it.role + "</p>" + (it.example ? "<h3>Exemple</h3><p>" + it.example + "</p>" : "");
+  }
+
+  var api = {
+    add: function (o) { world.add(o); return o; },
+    item: function (id, name, def, role, obj, anchor, example) {
+      obj.userData.itemId = id;
+      var a = new THREE.Object3D(); a.position.set(anchor[0], anchor[1], anchor[2]); obj.add(a);
+      var b = document.createElement("div"); b.className = "badge"; b.textContent = id; b.addEventListener("click", function () { select(id); }); badgesEl.appendChild(b);
+      var li = document.createElement("li"), bt = document.createElement("button");
+      bt.innerHTML = '<span class="n">' + id + '</span><span class="name">' + name + "</span>"; bt.setAttribute("aria-label", id + ". " + name);
+      bt.addEventListener("click", function () { select(id); }); li.appendChild(bt); listEl.appendChild(li);
+      items.push({ id: id, name: name, def: def, role: role, example: example, obj: obj, anchor: a, badge: b, btn: bt });
+    },
+    update: function (fn) { updaters.push(fn); },
+    controls: function (html, bind) { ctlEl.innerHTML = html; if (bind) bind(ctlEl); },
+    seg: function (el, sel, cb) {
+      var bs = el.querySelectorAll(sel + " button");
+      bs.forEach(function (b) { b.addEventListener("click", function () { bs.forEach(function (x) { x.classList.remove("on"); }); b.classList.add("on"); cb(b.getAttribute("data-v")); }); });
+    }
+  };
+
+  function disposeWorld() {
+    world.traverse(function (o) { if (o.geometry) o.geometry.dispose(); if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(function (m) { if (m.map) m.map.dispose(); m.dispose(); }); });
+    while (world.children.length) world.remove(world.children[0]);
+    badgesEl.innerHTML = ""; listEl.innerHTML = ""; ctlEl.innerHTML = ""; items = []; updaters = []; selected = 0;
+  }
+  function switchScene(key) {
+    var S = SCENES[key]; if (!S) return;
+    disposeWorld(); current = key; S.build(api);
+    target.set(S.target[0], S.target[1], S.target[2]); theta = S.view[0]; phi = S.view[1]; fitW = S.fit; autoFit = true; fitRadius(); radius = radiusTarget;
+    detailEl.innerHTML = "<h2>" + S.title + "</h2><p>" + S.intro + '</p><p class="legend">' + S.hint + "</p>";
+    Array.prototype.forEach.call(tabsEl.children, function (b) { b.classList.toggle("on", b.getAttribute("data-k") === key); });
+  }
+
+  /* =====================================================
+     SCÈNE 1 : STOCKAGE (bit → pétaoctet) + flux de bits
+     ===================================================== */
+  var SCENES = {};
+  SCENES.stock = {
+    label: "Stockage", target: [0, 1.2, 0], view: [0.45, 1.12], fit: 20,
+    title: "L'échelle des octets",
+    intro: "Toute information (texte, photo, musique, film) est stockée sous forme de 0 et de 1. Ici, chaque bloc est une unité plus grande que la précédente. Les petits cubes qui défilent derrière sont un flux de bits.",
+    hint: "Touche un numéro pour voir la définition. Pour passer d'une unité à la suivante, on multiplie par 1000 (ou par 1024 dans l'usage historique ; les normes Kio, Mio, Gio désignent précisément le 1024).",
+    build: function (A) {
+      A.add(grid(30));
+      var cols = [0x22d3ee, 0x38bdf8, 0x60a5fa, 0x818cf8, 0xa78bfa, 0xf472b6, 0xff7a1a];
+      var sizes = [0.3, 0.64];
+      for (var i = 2; i < 7; i++) sizes.push(sizes[i - 1] * 1.4);
+      var gap = 0.95, total = sizes.reduce(function (a, b) { return a + b; }, 0) + gap * 6, x = -total / 2;
+      var info = [
+        ["Bit", "La plus petite unité d'information : un 0 ou un 1, comme un interrupteur éteint ou allumé.", "Tout ce que fait un ordinateur (texte, image, son, vidéo) est écrit avec des suites de bits.", "Un seul bit : « oui » ou « non ».", "1 bit", "0 ou 1"],
+        ["Octet (o)", "Un groupe de 8 bits. Avec 8 bits, on peut former 256 combinaisons différentes (2 puissance 8).", "C'est l'unité de base pour mesurer la taille des données. Un octet suffit souvent pour une lettre ou un chiffre.", "Le mot « Salut » prend environ 5 octets.", "1 octet", "= 8 bits"],
+        ["Kilooctet (Ko)", "Environ 1 000 octets (1 024 dans l'usage historique).", "Sert à mesurer les très petits fichiers.", "Un petit fichier texte ou un court e-mail sans pièce jointe : quelques Ko.", "1 Ko", "≈ 1 000 octets"],
+        ["Mégaoctet (Mo)", "Environ 1 000 Ko, soit un million d'octets.", "Sert à mesurer les fichiers courants.", "Une photo de téléphone : environ 2 à 5 Mo. Une chanson : 3 à 5 Mo.", "1 Mo", "≈ 1 000 Ko"],
+        ["Gigaoctet (Go)", "Environ 1 000 Mo, soit un milliard d'octets.", "Sert à mesurer la mémoire vive (RAM), les clés USB, les films et les applications.", "Un film HD : 1 à 4 Go. La RAM d'un PC : souvent 8 ou 16 Go.", "1 Go", "≈ 1 000 Mo"],
+        ["Téraoctet (To)", "Environ 1 000 Go, soit mille milliards d'octets.", "Sert à mesurer la capacité des disques durs et SSD.", "Un disque dur de 1 To peut contenir des centaines de films.", "1 To", "≈ 1 000 Go"],
+        ["Pétaoctet (Po)", "Environ 1 000 To, soit un million de milliards d'octets.", "Sert à mesurer les données des grands centres de données.", "Les serveurs d'un grand réseau social ou d'un service de vidéo en ligne stockent des Po.", "1 Po", "≈ 1 000 To"]
+      ];
+      for (var k = 0; k < 7; k++) {
+        var s = sizes[k], cx = x + s / 2; x += s + gap;
+        var mat = M(cols[k], { emissive: cols[k], emissiveIntensity: 0.18, roughness: 0.4 });
+        var obj;
+        if (k === 1) {
+          obj = new THREE.Group();
+          for (var a = 0; a < 2; a++) for (var b = 0; b < 2; b++) for (var c = 0; c < 2; c++)
+            obj.add(box(0.3, 0.3, 0.3, mat, (a - 0.5) * 0.34, 0.15 + b * 0.34, (c - 0.5) * 0.34));
+          obj.position.set(cx, 0, 0);
+        } else if (k === 0) { obj = box(s, s, s, mat, cx, s / 2, 0); }
+        else { obj = box(s, s, s, mat, cx, s / 2, 0); }
+        A.add(obj);
+        var top = k === 0 ? 0.3 : (k === 1 ? 0.64 : s);
+        A.item(k + 1, info[k][0], info[k][1], info[k][2], obj, k === 1 ? [0, top + 0.35, 0] : [0, k === 0 ? top / 2 + 0.3 : s / 2 + 0.35, 0], info[k][3]);
+        var lb = label(info[k][4], info[k][5], 0.8); lb.position.set(cx, -0.55, 1.2); A.add(lb);
+      }
+      // flux de bits
+      var rail = box(total + 4, 0.04, 0.5, M(0x1f3350, { roughness: 0.8 }), 0, 0.02, -3);
+      A.add(rail);
+      var N = 40, inst = new THREE.InstancedMesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), M(0x22d3ee, { emissive: 0x22d3ee, emissiveIntensity: 0.6 }), N);
+      A.add(inst); var dummy = new THREE.Object3D(), L = total + 4, off = 0;
+      var fl = label("Flux de bits", "0 1 0 0 1 1 0 1 …", 0.8); fl.position.set(-total / 2 - 1.2, 0.9, -3); A.add(fl);
+      A.update(function (dt) {
+        off += dt * 1.8;
+        for (var i = 0; i < N; i++) {
+          var p = ((i * (L / N)) + off) % L; dummy.position.set(-L / 2 + p, 0.2, -3);
+          dummy.rotation.y = off + i; dummy.updateMatrix(); inst.setMatrixAt(i, dummy.matrix);
+        }
+        inst.instanceMatrix.needsUpdate = true;
+      });
+      A.controls("", null);
+    }
+  };
+
+  /* =====================================================
+     SCÈNE 2 : DÉBIT (bit/s) + latence
+     ===================================================== */
+  SCENES.debit = {
+    label: "Débit", target: [0, 1.3, 0], view: [0.35, 1.15], fit: 19,
+    title: "Le débit : combien de données par seconde",
+    intro: "Un serveur envoie des données à un ordinateur à travers un câble. Les cubes sont des paquets de données. Plus le débit est grand, plus il en passe vite.",
+    hint: "Bouge le curseur de débit et choisis un fichier : le temps de téléchargement est calculé pour toi. Les fichiers se comptent en octets, le débit en bits : il faut multiplier la taille par 8.",
+    build: function (A) {
+      A.add(grid(26));
+      var srv = new THREE.Group();
+      srv.add(box(1.8, 2.2, 1.5, M(0x2b3a55, { metalness: 0.4 }), 0, 1.1, 0));
+      for (var i = 0; i < 3; i++) { srv.add(box(1.5, 0.12, 0.05, M(0x0e1420), 0, 0.5 + i * 0.6, 0.78)); srv.add(box(0.1, 0.1, 0.06, M(0x22d3ee, { emissive: 0x22d3ee, emissiveIntensity: 0.9 }), 0.6, 0.5 + i * 0.6, 0.8)); }
+      srv.position.set(-6.5, 0, 0); A.add(srv);
+      A.item(1, "Source (serveur)", "L'ordinateur qui envoie les données : un site web, un service de vidéo, un serveur de jeux.", "Il stocke l'information et la découpe en paquets avant de l'envoyer sur le réseau.", srv, [0, 2.7, 0], "Quand tu regardes une vidéo en ligne, le serveur de la plateforme est la source.");
+
+      var pipe = new THREE.Group();
+      var glass = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 11, 32, 1, true), new THREE.MeshStandardMaterial({ color: 0x66b3ff, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false, roughness: 0.2 }));
+      glass.rotation.z = Math.PI / 2; glass.position.y = 1.1; pipe.add(glass);
+      [-5.5, 5.5].forEach(function (px) { var r = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.07, 10, 32), M(0x9aa8bd, { metalness: 0.6 })); r.rotation.y = Math.PI / 2; r.position.set(px, 1.1, 0); pipe.add(r); });
+      A.add(pipe);
+      A.item(2, "Canal (câble, fibre, Wi-Fi)", "Le chemin qui transporte les données : câble en cuivre, fibre optique, Wi-Fi, 4G ou 5G.", "Sa capacité maximale (la bande passante) limite le débit possible, comme le diamètre d'un tuyau limite le passage de l'eau.", pipe, [-3.2, 2.2, 0]);
+
+      var N = 44, geo = new THREE.BoxGeometry(0.3, 0.3, 0.3), packets = new THREE.InstancedMesh(geo, M(0x22d3ee, { emissive: 0x22d3ee, emissiveIntensity: 0.7 }), N);
+      var pg = new THREE.Group(); pg.add(packets); A.add(pg);
+      A.item(3, "Paquets de données", "Les données sont découpées en petits morceaux numérotés, appelés paquets.", "Chaque paquet voyage séparément puis tout est remis dans l'ordre à l'arrivée. Si un paquet est perdu, il est renvoyé.", pg, [0, 1.9, 0]);
+
+      var dm = new THREE.Group(); dm.add(box(0.1, 0.1, 0.1, M(0xffffff, { transparent: true, opacity: 0 }), 0, 0, 0)); A.add(dm);
+      A.item(4, "Débit (bit/s)", "La quantité de données transmises chaque seconde, mesurée en bits par seconde : bit/s, Kbit/s, Mbit/s, Gbit/s.", "Il décide de la rapidité d'un téléchargement ou de la qualité d'une vidéo en streaming. Attention : 100 Mbit/s correspondent à 12,5 Mo/s (on divise par 8).", dm, [3.2, 2.2, 0], "Fibre : 1 Gbit/s ou plus. Wi-Fi à la maison : souvent 50 à 500 Mbit/s.");
+
+      var pc = new THREE.Group();
+      pc.add(box(2.6, 1.7, 0.15, M(0x1a2233, { metalness: 0.4 }), 0, 1.9, 0));
+      pc.add(box(2.4, 1.5, 0.05, M(0x1d4ed8, { emissive: 0x1d4ed8, emissiveIntensity: 0.45 }), 0, 1.9, 0.1));
+      pc.add(box(0.3, 0.7, 0.3, M(0x2b3a55), 0, 0.5, 0)); pc.add(box(1.4, 0.1, 0.9, M(0x2b3a55), 0, 0.05, 0));
+      pc.position.set(6.5, 0, 0); A.add(pc);
+      A.item(5, "Destination (ordinateur)", "L'appareil qui reçoit les données : ordinateur, téléphone, télévision connectée.", "Il rassemble les paquets, les remet dans l'ordre et les transforme en page, image ou vidéo.", pc, [0, 3.3, 0]);
+
+      var lat = new THREE.Group(); var ring = new THREE.Mesh(new THREE.TorusGeometry(0.35, 0.05, 10, 32), M(0xff7a1a, { emissive: 0xff7a1a, emissiveIntensity: 0.5 })); ring.position.set(0, 0.2, 2.2); lat.add(ring); A.add(lat);
+      var ll = label("Latence (ping)", "temps aller-retour en ms", 0.8); ll.position.set(0, 0.2, 3.1); A.add(ll);
+      A.item(6, "Latence (ping, en ms)", "Le temps qu'un signal met pour faire l'aller-retour entre deux machines, mesuré en millisecondes (ms).", "Une faible latence rend les jeux en ligne et les appels vidéo fluides. Elle ne dépend pas seulement du débit.", lat, [0, 0.9, 2.2], "Une bonne latence pour jouer en ligne : moins de 50 ms.");
+
+      // flux
+      var norm = 0.5, flow = 0, dummy = new THREE.Object3D(), nv = N;
+      A.update(function (dt) {
+        flow += dt * (0.08 + norm * 0.9); var cnt = Math.round(6 + (N - 6) * norm); packets.count = cnt;
+        for (var i = 0; i < cnt; i++) { var s = ((i / cnt) + flow) % 1; dummy.position.set(-5.2 + 10.4 * s, 1.1, 0); dummy.rotation.set(s * 6, s * 4, 0); dummy.updateMatrix(); packets.setMatrixAt(i, dummy.matrix); }
+        packets.instanceMatrix.needsUpdate = true; ring.scale.setScalar(1 + 0.15 * Math.sin(performance.now() / 120));
+      });
+
+      var FILES = [["Photo", 4], ["Application", 500], ["Film HD", 4000], ["Jeu vidéo", 50000]];
+      function fmtT(s) { if (s < 1) return "moins d'une seconde"; if (s < 60) return Math.round(s) + " s"; if (s < 3600) return Math.floor(s / 60) + " min " + Math.round(s % 60) + " s"; return Math.floor(s / 3600) + " h " + Math.round((s % 3600) / 60) + " min"; }
+      function fmtF(mo) { return mo >= 1000 ? fr(mo / 1000, 0) + " Go" : mo + " Mo"; }
+      A.controls('<div class="row"><label>Débit</label><input type="range" id="ds" min="0" max="100" value="67"><b id="dv"></b></div>' +
+        '<div class="row"><label>Fichier</label><select id="df">' + FILES.map(function (f, i) { return '<option value="' + i + '"' + (i === 2 ? " selected" : "") + ">" + f[0] + " (" + fmtF(f[1]) + ")</option>"; }).join("") + '</select></div>' +
+        '<div class="res" id="dr"></div>', function (el) {
+        var ds = el.querySelector("#ds"), df = el.querySelector("#df"), dv = el.querySelector("#dv"), dr = el.querySelector("#dr");
+        function upd() {
+          var v = +ds.value, mb = Math.pow(10, v / 100 * 3); norm = v / 100;
+          var rate = mb >= 1000 ? fr(mb / 1000, 1) + " Gbit/s" : (mb < 10 ? fr(mb, 1) : fr(mb, 0)) + " Mbit/s";
+          var f = FILES[+df.value], sec = f[1] * 8 / mb;
+          dv.textContent = rate;
+          dr.innerHTML = f[0] + " de " + fmtF(f[1]) + " (" + fr(f[1] * 8, 0) + " Mbit) à " + rate + " : <b>" + fmtT(sec) + "</b><br>(" + rate + " = " + fr(mb / 8, 1) + " Mo par seconde)";
+        }
+        ds.addEventListener("input", upd); df.addEventListener("change", upd); upd();
+      });
+    }
+  };
+
+  /* =====================================================
+     SCÈNE 3 : FRÉQUENCE (Hz) + signal d'horloge
+     ===================================================== */
+  SCENES.freq = {
+    label: "Fréquence", target: [0, 1.4, 0], view: [0.5, 1.0], fit: 19,
+    title: "La fréquence : le tic-tac du processeur",
+    intro: "Un processeur travaille au rythme d'une horloge interne. Chaque « tic » est un cycle. La fréquence compte combien de cycles se produisent chaque seconde. L'onde orange est ce signal d'horloge.",
+    hint: "Choisis une fréquence en bas. L'animation est très ralentie : à 3 GHz, le vrai signal bat 3 milliards de fois par seconde, bien trop vite pour être vu.",
+    build: function (A) {
+      A.add(grid(26));
+      var cpu = new THREE.Group();
+      cpu.add(box(3.6, 0.25, 3.6, M(0x1b4a3c, { roughness: 0.6 }), 0, 0.13, 0));
+      cpu.add(box(2.5, 0.18, 2.5, M(0xb9c0c8, { metalness: 0.6, roughness: 0.35 }), 0, 0.33, 0));
+      for (var p = -8; p <= 8; p++) { cpu.add(box(0.07, 0.07, 0.3, M(0xd4af37, { metalness: 0.7 }), p * 0.2, 0.06, 1.95)); cpu.add(box(0.07, 0.07, 0.3, M(0xd4af37, { metalness: 0.7 }), p * 0.2, 0.06, -1.95)); }
+      A.add(cpu);
+      A.item(1, "Processeur (CPU)", "La puce principale de l'ordinateur, appelée aussi microprocesseur.", "Elle exécute les instructions des programmes, une par cycle d'horloge ou plus. C'est le cerveau de l'ordinateur.", cpu, [-1.5, 0.6, 1.5]);
+
+      var cores = new THREE.Group(), coreMats = [];
+      [[-0.55, -0.55], [0.55, -0.55], [-0.55, 0.55], [0.55, 0.55]].forEach(function (q) {
+        var m = M(0x22d3ee, { emissive: 0x22d3ee, emissiveIntensity: 0.5 }); coreMats.push(m); cores.add(box(0.8, 0.06, 0.8, m, q[0], 0.46, q[1]));
+      });
+      A.add(cores);
+      A.item(5, "Cœurs et performance", "Un processeur moderne contient plusieurs cœurs (4, 8, 16…), chacun capable de travailler seul.", "La vitesse réelle dépend de la fréquence, du nombre de cœurs et de l'architecture. Deux processeurs à 3 GHz ne se valent pas forcément.", cores, [0, 0.9, 0], "Un processeur à 4 cœurs peut faire 4 tâches en même temps.");
+
+      var ring = new THREE.Mesh(new THREE.TorusGeometry(2.7, 0.07, 12, 72), M(0xff7a1a, { emissive: 0xff7a1a, emissiveIntensity: 0.5 }));
+      ring.rotation.x = Math.PI / 2; ring.position.y = 0.3; A.add(ring);
+      A.item(3, "Cycle", "Un cycle est un battement complet de l'horloge : le signal monte, puis redescend.", "À chaque cycle, le processeur avance d'un pas dans son travail. L'anneau orange pulse à chaque cycle.", ring, [2.7, 0.3, 0]);
+
+      var NP = 300, pos = new Float32Array(NP * 3), geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+      var wave = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0xff9a4d })); A.add(wave);
+      var wl = label("Signal d'horloge", null, 0.9); wl.position.set(-6.5, 3.0, 0); A.add(wl);
+      A.item(2, "Signal d'horloge", "Un signal électrique qui alterne sans cesse entre « haut » (1) et « bas » (0), comme un métronome.", "Il cadence tous les composants du processeur pour qu'ils travaillent ensemble au même rythme.", wave, [5.8, 2.9, 0]);
+
+      var hz = new THREE.Group(), names = [["Hz", "1 par seconde"], ["kHz", "mille"], ["MHz", "un million"], ["GHz", "un milliard"]], hcols = [0x22d3ee, 0x60a5fa, 0xa78bfa, 0xff7a1a];
+      names.forEach(function (n, i) {
+        var h = 0.5 + i * 0.5; hz.add(box(0.9, h, 0.9, M(hcols[i], { emissive: hcols[i], emissiveIntensity: 0.2 }), -5.8 + i * 1.2, h / 2, 3.4));
+        var l = label(n[0], n[1], 0.6); l.position.set(-5.8 + i * 1.2, -0.45, 4.2); hz.add(l);
+      });
+      A.add(hz);
+      A.item(4, "Hertz (Hz)", "Le hertz mesure le nombre de cycles par seconde. 1 kHz = 1 000 Hz, 1 MHz = 1 million de Hz, 1 GHz = 1 milliard de Hz.", "Plus la fréquence est élevée, plus le processeur peut faire de pas par seconde.", hz, [-4.2, 2.8, 3.4], "Un processeur à 3 GHz bat 3 milliards de fois par seconde.");
+
+      var cyc = 3, phase = 0;
+      A.update(function (dt) {
+        phase += dt * cyc; var a = geo.attributes.position;
+        for (var i = 0; i < NP; i++) {
+          var u = i / (NP - 1), s = Math.sin(2 * Math.PI * (u * 5 - phase / 2.5)), y = 2.2 + 0.8 * Math.max(-1, Math.min(1, s * 6)) * 0.5 + 0.4;
+          a.setXYZ(i, -6 + 12 * u, y, 0);
+        }
+        a.needsUpdate = true;
+        var k = 0.5 + 0.5 * Math.sin(phase * 2 * Math.PI / 2.5 * 1.0); ring.scale.setScalar(1 + 0.06 * k);
+        coreMats.forEach(function (m, i) { if (!m.userData.e0 || m.emissive.getHex() === m.userData.e0.getHex()) m.emissiveIntensity = 0.2 + 0.6 * k; });
+      });
+
+      var F = { hz: ["1 Hz", 0.3, "1 Hz : un seul cycle par seconde (une horloge qui fait « tic » chaque seconde)."], khz: ["1 kHz", 0.8, "1 kHz : 1 000 cycles par seconde."], mhz: ["1 MHz", 1.6, "1 MHz : 1 million de cycles par seconde (ordinateurs des années 1980)."], ghz: ["1 GHz", 2.6, "1 GHz : 1 milliard de cycles par seconde."], g3: ["3 GHz", 4.2, "3 GHz : 3 milliards de cycles par seconde (un processeur de PC actuel)."] };
+      A.controls('<div class="row seg" id="fs"><button data-v="hz">1 Hz</button><button data-v="khz">1 kHz</button><button data-v="mhz">1 MHz</button><button data-v="ghz">1 GHz</button><button data-v="g3" class="on">3 GHz</button></div><div class="res" id="fr">' + F.g3[2] + "</div>", function (el) {
+        A.seg(el, "#fs", function (v) { cyc = F[v][1]; el.querySelector("#fr").textContent = F[v][2]; });
+        cyc = F.g3[1];
+      });
+    }
+  };
+
+  /* =====================================================
+     SCÈNE 4 : PIXELS, RÉSOLUTION, COULEUR
+     ===================================================== */
+  SCENES.pixels = {
+    label: "Pixels", target: [0, 3.6, 0], view: [0.4, 1.35], fit: 18,
+    title: "L'image : pixels et résolution",
+    intro: "Un écran est un quadrillage de minuscules points colorés appelés pixels. Ici, l'écran est volontairement très grossi : change la résolution pour voir l'image devenir plus fine.",
+    hint: "Choisis une résolution : le nombre de pixels et le poids d'une image non compressée sont calculés. La barre claire qui balaie l'écran illustre le rafraîchissement.",
+    build: function (A) {
+      A.add(grid(26));
+      var W = 12, H = W * 9 / 16, cy = 4.2;
+      var scr = new THREE.Group();
+      var frame = M(0x131a28, { metalness: 0.4, roughness: 0.5 });
+      scr.add(box(W + 0.6, 0.3, 0.3, frame, 0, cy + H / 2 + 0.15, 0)); scr.add(box(W + 0.6, 0.3, 0.3, frame, 0, cy - H / 2 - 0.15, 0));
+      scr.add(box(0.3, H + 0.6, 0.3, frame, -W / 2 - 0.15, cy, 0)); scr.add(box(0.3, H + 0.6, 0.3, frame, W / 2 + 0.15, cy, 0));
+      scr.add(box(0.5, cy - H / 2, 0.4, frame, 0, (cy - H / 2) / 2, -0.2)); scr.add(box(3, 0.15, 1.6, frame, 0, 0.08, -0.2));
+      A.add(scr);
+
+      var gridMesh = null, curRes = "fhd";
+      var RES = { hd: [32, 18, 1280, 720, "HD"], fhd: [48, 27, 1920, 1080, "Full HD"], uhd: [96, 54, 3840, 2160, "4K"] };
+      function img(u, v) {
+        var sky0 = [0.12, 0.2, 0.55], sky1 = [0.98, 0.55, 0.25], t = Math.min(1, v / 0.62), col = [sky0[0] + (sky1[0] - sky0[0]) * t, sky0[1] + (sky1[1] - sky0[1]) * t, sky0[2] + (sky1[2] - sky0[2]) * t];
+        var dx = u - 0.68, dy = (v - 0.5) * 0.56; if (Math.sqrt(dx * dx + dy * dy) < 0.075) col = [1, 0.9, 0.3];
+        var ridge = 0.6 + 0.08 * Math.sin(u * 9) + 0.04 * Math.sin(u * 23 + 1);
+        if (v > ridge) { var g = 0.12 + 0.1 * (v - ridge); col = [g * 0.8, g, g * 1.3]; }
+        if (v > 0.84) { col = [0.1 + 0.2 * (1 - (v - 0.84) / 0.16), 0.25, 0.4]; }
+        return col;
+      }
+      function buildGrid() {
+        if (gridMesh) { scr.remove(gridMesh); gridMesh.geometry.dispose(); gridMesh.material.dispose(); }
+        var r = RES[curRes], nx = r[0], ny = r[1], cell = W / nx;
+        gridMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(cell * 0.94, cell * 0.94, 0.12), new THREE.MeshBasicMaterial({ color: 0xffffff }), nx * ny);
+        var d = new THREE.Object3D(), col = new THREE.Color();
+        for (var j = 0; j < ny; j++) for (var i = 0; i < nx; i++) {
+          var idx = j * nx + i; d.position.set(-W / 2 + cell * (i + 0.5), cy + H / 2 - cell * (j + 0.5), 0.05); d.updateMatrix(); gridMesh.setMatrixAt(idx, d.matrix);
+          var c = img((i + 0.5) / nx, (j + 0.5) / ny); col.setRGB(c[0], c[1], c[2]); gridMesh.setColorAt(idx, col);
+        }
+        gridMesh.instanceMatrix.needsUpdate = true; gridMesh.instanceColor.needsUpdate = true; scr.add(gridMesh);
+      }
+      buildGrid();
+
+      var scan = new THREE.Mesh(new THREE.PlaneGeometry(W, 0.35), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.28, depthWrite: false })); scan.position.z = 0.2; scr.add(scan);
+
+      var px = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.35, 0.3), M(0xffffff, { emissive: 0xffffff, emissiveIntensity: 0.6 })); px.position.set(-W / 2 - 1.2, cy + H / 2 - 0.4, 0.2); A.add(px);
+      A.item(1, "Pixel", "Le plus petit point d'une image ou d'un écran. Il a une seule couleur à la fois.", "En associant des millions de pixels de couleurs différentes, l'écran forme l'image que tu vois.", px, [0, 0.5, 0], "Si tu zoomes beaucoup sur une photo, tu vois apparaître les pixels, des petits carrés.");
+      var ar = box(W, 0.06, 0.06, M(0x22d3ee, { emissive: 0x22d3ee, emissiveIntensity: 0.7 }), 0, cy - H / 2 - 0.9, 0.2); A.add(ar);
+      A.item(2, "Résolution", "Le nombre de pixels en largeur et en hauteur, par exemple 1920 × 1080.", "Plus la résolution est élevée, plus l'image est fine et détaillée (mais plus elle demande de mémoire et de puissance).", ar, [0, 0.55, 0], "HD : 1280 × 720. Full HD : 1920 × 1080. 4K : 3840 × 2160.");
+      var mp = box(0.6, 0.6, 0.6, M(0xa78bfa, { emissive: 0xa78bfa, emissiveIntensity: 0.4 }), W / 2 + 1.5, cy + H / 2 - 0.3, 0.2); A.add(mp);
+      A.item(3, "Mégapixel (Mpx)", "Un million de pixels. On l'obtient en multipliant largeur par hauteur, puis en divisant par un million.", "C'est l'unité pour décrire la finesse d'un capteur d'appareil photo ou d'un écran.", mp, [0, 0.8, 0], "Full HD : 1920 × 1080 = 2 073 600 pixels, soit environ 2,1 Mpx.");
+      var cd = box(0.6, 0.6, 0.6, M(0xff7a1a, { emissive: 0xff7a1a, emissiveIntensity: 0.4 }), W / 2 + 1.5, cy - H / 2 + 0.3, 0.2); A.add(cd);
+      A.item(4, "Profondeur de couleur (bits)", "Le nombre de bits utilisés pour coder la couleur d'un pixel. En 24 bits, il y a 8 bits pour le rouge, 8 pour le vert et 8 pour le bleu.", "Elle fait le lien avec les octets : 24 bits = 3 octets par pixel. Elle permet d'afficher environ 16,7 millions de couleurs.", cd, [0, 0.8, 0], "Une image Full HD non compressée pèse 2 073 600 × 3 octets, soit environ 6,2 Mo.");
+      var rf = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.07, 10, 32), M(0x4ade80, { emissive: 0x4ade80, emissiveIntensity: 0.5 })); rf.position.set(-W / 2 - 1.2, cy - H / 2 + 0.4, 0.2); A.add(rf);
+      A.item(5, "Rafraîchissement (Hz)", "Le nombre de fois par seconde où l'écran redessine entièrement l'image, mesuré en hertz.", "Plus il est élevé, plus les mouvements paraissent fluides, surtout dans les jeux vidéo.", rf, [0, 0.7, 0], "Un écran classique : 60 Hz. Un écran de jeu : 144 Hz ou plus.");
+
+      var rate = 1.0, t = 0;
+      A.update(function (dt) { t += dt * rate; var s = (t % 1); scan.position.y = cy + H / 2 - s * H; rf.rotation.z += dt * rate * 6; });
+
+      A.controls('<div class="row"><label>Résolution</label><div class="seg" id="rs"><button data-v="hd">HD</button><button data-v="fhd" class="on">Full HD</button><button data-v="uhd">4K</button></div></div>' +
+        '<div class="row"><label>Rafraîch.</label><div class="seg" id="hs"><button data-v="0.5">30 Hz</button><button data-v="1" class="on">60 Hz</button><button data-v="2.4">144 Hz</button></div></div><div class="res" id="rr"></div>', function (el) {
+        var rr = el.querySelector("#rr");
+        function upd() { var r = RES[curRes], n = r[2] * r[3], o = n * 3; rr.innerHTML = r[4] + " : " + r[2] + " × " + r[3] + " = <b>" + fr(n, 0) + " pixels</b> (≈ " + fr(n / 1e6, 1) + " Mpx)<br>Image non compressée : × 3 octets ≈ <b>" + fr(o / 1e6, 1) + " Mo</b>"; }
+        A.seg(el, "#rs", function (v) { curRes = v; buildGrid(); upd(); });
+        A.seg(el, "#hs", function (v) { rate = +v; });
+        upd();
+      });
+    }
+  };
+
+  /* ---------- Onglets ---------- */
+  Object.keys(SCENES).forEach(function (k) {
+    var b = document.createElement("button"); b.textContent = SCENES[k].label; b.setAttribute("data-k", k);
+    b.addEventListener("click", function () { switchScene(k); }); tabsEl.appendChild(b);
+  });
+
+  var rb = document.createElement("button"); rb.textContent = "Recentrer"; rb.addEventListener("click", function () { var S = SCENES[current]; theta = S.view[0]; phi = S.view[1]; autoFit = true; fitRadius(); }); tabsEl.appendChild(rb);
+
+  /* ---------- Boucle ---------- */
+  var last = performance.now(), tmp = new THREE.Vector3();
+  function frame(now) {
+    var dt = Math.min(0.05, (now - last) / 1000); last = now;
+    updaters.forEach(function (f) { f(dt); });
+    if (autoFit) radius += (radiusTarget - radius) * (1 - Math.exp(-dt * 4));
+    applyCamera(); renderer.render(scene, camera);
+    var w = stage.clientWidth, h = stage.clientHeight;
+    items.forEach(function (it) {
+      it.anchor.getWorldPosition(tmp); tmp.project(camera);
+      if (tmp.z > 1 || tmp.z < -1) { it.badge.style.display = "none"; return; }
+      it.badge.style.display = "";
+      it.badge.style.transform = "translate(" + ((tmp.x * 0.5 + 0.5) * w).toFixed(1) + "px," + ((-tmp.y * 0.5 + 0.5) * h).toFixed(1) + "px)";
+    });
+    requestAnimationFrame(frame);
+  }
+  resize(); switchScene("stock"); requestAnimationFrame(frame);
+  window.__app = { switchScene: switchScene, select: select, setView: function (t, p) { theta = t; phi = p; } };
+})();
+</script>
+<script>
+(function () {
+  var txt = document.getElementById("netTxt"), inst = document.getElementById("inst"), net = document.getElementById("net"), dp = null;
+  function ok(m) { txt.textContent = m; net.classList.add("ok"); }
+  var http = location.protocol === "http:" || location.protocol === "https:";
+  if (!http) { ok("✓ Fonctionne hors ligne"); }
+  else if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").then(function () { return navigator.serviceWorker.ready; })
+      .then(function () { ok("✓ Prêt hors ligne"); }).catch(function () { txt.textContent = "Hors ligne indisponible"; });
+  } else { txt.textContent = "Hors ligne indisponible"; }
+  window.addEventListener("offline", function () { ok("✓ Hors ligne : tout fonctionne"); });
+  window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); dp = e; inst.hidden = false; });
+  inst.addEventListener("click", function () { if (!dp) return; dp.prompt(); dp = null; inst.hidden = true; });
+})();
+</script>
+</body>
+</html>
